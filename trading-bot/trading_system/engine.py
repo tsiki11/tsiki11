@@ -18,11 +18,14 @@ import pandas as pd
 
 
 def run(weights: pd.DataFrame, returns: pd.DataFrame, cash_ret: pd.Series,
-        lag: int = 1, cost_bps: float | pd.Series = 5.0) -> pd.DataFrame:
+        lag: int = 1, cost_bps: float | pd.Series = 5.0,
+        short_fee_yr: float = 0.0, short_rebate: bool = True) -> pd.DataFrame:
     """Event-driven simulation with weight drift between rebalances.
 
     A trade happens only when the (lagged) target changes; in between,
     holdings drift with prices (no free daily rebalancing).
+    Shorts: pay `short_fee_yr` (borrow fee, e.g. 0.005) on short notional; if
+    short_rebate=False the short sale proceeds earn no interest (conservative).
     """
     weights = weights.reindex(returns.index).ffill().fillna(0.0)
     tgt = weights.shift(lag).fillna(0.0)           # target in force at close of day t
@@ -42,6 +45,11 @@ def run(weights: pd.DataFrame, returns: pd.DataFrame, cash_ret: pd.Series,
         cash_w = 1.0 - h.sum()
         cr = rc[t] if cash_w >= 0 else rc[t] + borrow_spread
         port = float(h @ R[t] + cash_w * cr)
+        short_notional = float(-h[h < 0].sum())
+        if short_notional > 0:
+            port -= short_notional * short_fee_yr / 252
+            if not short_rebate:
+                port -= short_notional * rc[t]
         # drift
         if 1.0 + port != 0:
             h = h * (1.0 + R[t]) / (1.0 + port)
