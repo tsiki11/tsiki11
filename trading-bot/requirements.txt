@@ -1,0 +1,8 @@
+pandas>=2.2
+numpy>=1.26
+yfinance>=0.2.40
+vectorbt>=0.26      # independent cross-check of the engine
+quantstats>=0.0.62  # HTML tearsheets
+matplotlib>=3.8
+scipy>=1.11
+tabulate>=0.9
