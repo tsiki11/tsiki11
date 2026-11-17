@@ -20,7 +20,12 @@ CONFIG = {
     # sleeve allocation
     "alloc_vol_window": 252, "alloc_freq": "M",
     "portfolio_target_vol": 0.10, "max_leverage": 1.0,
+    "signal": "tsmom", "fast": 50, "slow": 200,
 }
+
+# Golden-cross variant: identical framework, only the trend signal changes.
+# Textbook 50/200 SMA parameters, fixed before any testing.
+GC_CONFIG = dict(CONFIG, signal="golden_cross", fast=50, slow=200)
 
 
 def prepare(d: dict, end: str | None = None):
@@ -37,7 +42,8 @@ def sleeve_returns(d: dict, end: str | None = None, cfg=CONFIG) -> tuple[pd.Data
     roo = o.pct_change(fill_method=None)
     cash = rcc["BIL"].fillna(0.0)
 
-    wA = S.multi_asset_trend(c, cfg["trend_assets"], cfg["trend_target_vol"], freq=cfg["trend_freq"])
+    sig = dict(signal=cfg.get("signal", "tsmom"), fast=cfg.get("fast", 50), slow=cfg.get("slow", 200))
+    wA = S.multi_asset_trend(c, cfg["trend_assets"], cfg["trend_target_vol"], freq=cfg["trend_freq"], **sig)
     bA = engine.run(wA, rcc, cash, lag=1, cost_bps=cfg["etf_cost_bps"])
 
     wB = S.ibs_mean_reversion(o, h, l, c, cfg["mr_assets"], cfg["mr_entry"], cfg["mr_sma"], cfg["mr_max_hold"])
@@ -46,7 +52,7 @@ def sleeve_returns(d: dict, end: str | None = None, cfg=CONFIG) -> tuple[pd.Data
     bB = engine.run(wB, roo, cash, lag=1, cost_bps=cfg["etf_cost_bps"])
 
     cr = cfg["crypto_assets"]
-    wC = S.crypto_trend(c[cr], cr, cfg["crypto_target_vol"], freq=cfg["crypto_freq"])
+    wC = S.crypto_trend(c[cr], cr, cfg["crypto_target_vol"], freq=cfg["crypto_freq"], **sig)
     bC = engine.run(wC, rcc[cr], cash, lag=1, cost_bps=cfg["crypto_cost_bps"])
     # before crypto history exists the sleeve is just cash -> mark as NaN
     first_c = wC.abs().sum(axis=1).gt(0).idxmax()

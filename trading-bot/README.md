@@ -50,6 +50,26 @@
 
 **Σημαντικό:** αν αλλάζαμε τώρα παραμέτρους για να «φτιάξουμε» το 2023+, θα κάναμε overfitting και το OOS θα έχανε κάθε αξία. Το επόμενο τίμιο τεστ είναι το **forward paper trading**.
 
+## Πείραμα 2: Golden cross (SMA50 > SMA200)
+
+Ίδια διαδικασία: οι παράμετροι 50/200 κλειδώθηκαν με δεδομένα ≤2022 και το OOS έτρεξε μία φορά.
+Υπάρχει μία επιφύλαξη: το OOS το είχαμε ήδη δει από το πείραμα 1, άρα αυτή είναι η 2η δοκιμή στην ίδια περίοδο.
+Κώδικας: `research/golden_cross_insample.py`, `research/golden_cross_oos.py`. Αποτελέσματα: [`results/golden_cross_summary.md`](results/golden_cross_summary.md).
+
+![golden cross](results/golden_cross_equity.png)
+
+| Sharpe (excess) | In-sample 2013–22 | OOS 2023–26 | Max DD OOS |
+|---|---|---|---|
+| GC1: SPY long/cash | 0.60 | 0.65 | −18.8% |
+| GC2: 13 ETFs, inverse-vol | 0.51 | 0.10 | −6.7% |
+| GC3: BTC/ETH, vol target 30% | 1.48 | 0.62 | −35.6% |
+| **GC-Portfolio** (GC2 + MeanRev + GC3) | **1.26** | **0.47** | −9.5% |
+| Αρχικό portfolio (TSMOM) | 1.14 | 0.45 | −6.8% |
+| SPY buy&hold | 0.73 | 1.00 | −18.8% |
+
+Συμπέρασμα: το golden cross **δεν περνά τον στόχο Sharpe > 1 στο OOS**. Στο SPY μειώνει τα βαθιά drawdowns, όπως το 2008 και το 2022.
+Χάνει όμως τις γρήγορες ανακάμψεις, όπως το 2020 και τον Απρίλιο του 2025, όπου έβγαλε +0.7% έναντι +17.7% για το SPY. Γι' αυτό υστερεί του buy&hold.
+
 ## Χρήση
 
 ```bash
