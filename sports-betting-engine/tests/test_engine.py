@@ -115,3 +115,29 @@ def test_team_table_points():
     t = team_table(df).set_index("team")
     assert t.loc["A", "βαθμοί"] == 4 and t.loc["B", "βαθμοί"] == 1
     assert t.loc["A", "φόρμα"] == "WD"
+
+
+# ---------- σουτ / κόρνερ ----------
+def test_count_model_without_rho():
+    df, _ = synthetic_league()
+    m = DixonColes(fit_rho=False).fit(df)
+    assert m.params["rho"] == 0.0
+
+
+def test_negative_binomial_over_probabilities():
+    from betengine.experiments import _nb_over
+    from scipy.stats import poisson
+    assert _nb_over(9.5, 1.0, 9.5) == pytest.approx(poisson.sf(9, 9.5))   # phi=1 -> Poisson
+    # μεγαλύτερη διασπορά -> πιο "παχιές" ουρές
+    assert _nb_over(9.5, 1.5, 14.5) > _nb_over(9.5, 1.0, 14.5)
+    assert _nb_over(9.5, 1.2, 8.5) > _nb_over(9.5, 1.2, 10.5)
+
+
+def test_corner_shrink_recovers_slope():
+    from betengine.experiments import fit_corner_shrink
+    rng = np.random.default_rng(0)
+    dev = rng.normal(0, 1, 5000)
+    base = np.full(5000, 9.5)
+    actual = base + 0.5 * dev + rng.normal(0, 0.5, 5000)
+    df = pd.DataFrame({"xc_total": base + dev, "xc_base": base, "hc": actual, "ac": 0.0})
+    assert fit_corner_shrink(df) == pytest.approx(0.5, abs=0.03)

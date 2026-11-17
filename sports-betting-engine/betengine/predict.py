@@ -21,6 +21,30 @@ def fit_league_models(matches: pd.DataFrame, ref_date, window_days: int = config
     return models
 
 
+def fit_corner_models(matches: pd.DataFrame, ref_date, window_days: int = config.TRAIN_WINDOW_DAYS) -> dict:
+    from .experiments import CornerPredictor
+    ref_date = pd.Timestamp(ref_date)
+    out = {}
+    for lg, df in matches.groupby("league"):
+        train = df[(df.date < ref_date) & (df.date >= ref_date - pd.Timedelta(days=window_days))]
+        train = train.dropna(subset=["hc", "ac"])
+        if len(train) >= 100:
+            out[lg] = CornerPredictor(train, ref_date)
+    return out
+
+
+def predict_corners(fixtures: pd.DataFrame, corner_models: dict) -> pd.DataFrame:
+    rows = []
+    for _, r in fixtures.iterrows():
+        cm = corner_models.get(r.league)
+        p = cm.predict(r.home, r.away) if cm else None
+        if p:
+            rows.append({"date": r.date, "time": r.get("time", ""), "league": r.league,
+                         "home": r.home, "away": r.away, **p,
+                         "απόδοση_bookmaker_over": None, "απόδοση_bookmaker_under": None, "γραμμή": None})
+    return pd.DataFrame(rows)
+
+
 def predict_fixtures(fixtures: pd.DataFrame, models: dict[str, DixonColes], bankroll: float = 1000.0,
                      min_edge: float = config.MIN_EDGE, max_odds: float = config.MAX_ODDS,
                      kelly_frac: float = config.KELLY_FRACTION, max_stake_pct: float = config.MAX_STAKE_PCT,

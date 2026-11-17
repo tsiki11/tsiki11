@@ -86,7 +86,10 @@ def _tau(x, y, lam, mu, rho):
 
 
 class DixonColes:
-    def __init__(self, xi: float = config.XI, l2: float = config.L2, max_goals: int = config.MAX_GOALS):
+    def __init__(self, xi: float = config.XI, l2: float = config.L2, max_goals: int = config.MAX_GOALS,
+                 fit_rho: bool = True):
+        """fit_rho=False: απλό Poisson μοντέλο (ρ=0) - για άλλα μεγέθη όπως σουτ ή κόρνερ."""
+        self.fit_rho = fit_rho
         self.xi = xi
         self.l2 = l2
         self.max_goals = max_goals
@@ -153,7 +156,7 @@ class DixonColes:
         n = len(self.teams)
         theta0 = np.zeros(2 * n + 3)
         theta0[2 * n] = np.log(max(np.average((x + y) / 2, weights=w), 0.1))
-        theta0[2 * n + 1] = 0.25
+        theta0[2 * n + 1] = 0.1
         if warm_start is not None and warm_start.params is not None:
             p = warm_start.params
             for t, i in idx.items():
@@ -161,7 +164,10 @@ class DixonColes:
                 theta0[n + i] = p["defence"].get(t, 0.0)
             theta0[2 * n], theta0[2 * n + 1], theta0[2 * n + 2] = p["mu0"], p["home"], p["rho"]
 
-        bounds = [(-3, 3)] * (2 * n) + [(-3, 3), (-1, 1), (-0.2, 0.2)]
+        rho_bound = (-0.2, 0.2) if self.fit_rho else (0.0, 0.0)
+        if not self.fit_rho:
+            theta0[2 * n + 2] = 0.0
+        bounds = [(-3, 3)] * (2 * n) + [(-3, 3), (-1, 1), rho_bound]
         res = minimize(self._nll, theta0, args=(hi, ai, x, y, w), jac=True,
                        method="L-BFGS-B", bounds=bounds, options={"maxiter": 500})
         att, dfn, mu0, home, rho = self._unpack(res.x)

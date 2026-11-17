@@ -14,7 +14,7 @@ import pandas as pd
 
 from . import config, data, report
 from .backtest import BacktestSettings, run as run_backtest
-from .predict import fit_league_models, predict_fixtures
+from .predict import fit_corner_models, fit_league_models, predict_corners, predict_fixtures
 from .stats import team_table
 
 pd.set_option("display.width", 200)
@@ -116,8 +116,13 @@ def cmd_predict(args):
     else:
         print(bets[["date", "league", "home", "away", "market", "selection", "p_model", "fair_odds",
                     "odds", "edge", "stake"]].round(3).to_string(index=False))
+    corners = predict_corners(fixtures, fit_corner_models(hist, today))
+    if not corners.empty:
+        print("\n--- Κόρνερ (για σύγκριση με τις γραμμές του bookmaker - paper trading) ---")
+        print(corners[["date", "league", "home", "away", "xc_total", "corners_over_9.5",
+                       "fair_corners_over_9.5", "fair_corners_under_9.5"]].round(2).to_string(index=False))
     out = report.write_excel(args.out or config.REPORTS_DIR / f"predictions_{today.date()}.xlsx",
-                             {"Value bets": bets, "Προβλέψεις": preds})
+                             {"Value bets": bets, "Προβλέψεις": preds, "Κόρνερ": corners})
     print(f"\nExcel: {out}")
     print("Υπενθύμιση: πιθανότητες, όχι βεβαιότητες. Έλεγξε την απόδοση τη στιγμή του στοιχήματος.")
 
@@ -144,6 +149,34 @@ def cmd_season_test(args):
     }, highlight={"Αγώνες - frozen": "σωστό_μοντέλο", "Αγώνες - walk-forward": "σωστό_μοντέλο",
                   "Value bets": "won"})
     print(f"\nExcel: {out}")
+
+
+def cmd_experiments(args):
+    from . import experiments as ex
+    leagues = _leagues(args)
+    seasons = sorted(set(sum([f[0] + [f[1]] for f in FOLDS], [])))
+    matches = data.load_matches(leagues, seasons)
+    print("Folds: " + " | ".join(f"εκμάθηση {'+'.join(t)} -> test {s}" for t, s in FOLDS))
+    r = ex.run_all(matches, FOLDS)
+    g = r["goals"]
+    print("\n--- Γκολ: βελτίωση log-loss όταν προστίθεται το μοντέλο στην αγορά (θετικό = προσθέτει πληροφορία) ---")
+    best = g[g.βάρος_μοντέλου > 0].groupby(["test_σεζόν", "μοντέλο"])[
+        ["βελτίωση_1X2_vs_αγορά", "βελτίωση_OU_vs_αγορά"]].max()
+    print(best.round(4).to_string())
+    c = r["corners"]
+    c = c[c["λίγκα"] == "ΣΥΝΟΛΟ"]
+    print(f"\n--- Κόρνερ: μοντέλο vs μέσος όρος λίγκας (k={r['k']:.3f} από το 1ο fold) ---")
+    print(c[["test_σεζόν", "εκδοχή", "αγώνες", "MAE_μοντέλο", "MAE_baseline", "LL_over9.5_μοντέλο",
+             "LL_over9.5_baseline", "LL_over10.5_μοντέλο", "LL_over10.5_baseline"]].round(4).to_string(index=False))
+    out = report.write_excel(args.out or config.REPORTS_DIR / "experiments.xlsx", {
+        "Γκολ - μοντέλα vs αγορά": r["goals"], "Κόρνερ - σύνοψη": r["corners"],
+        "Κόρνερ - calibration": r["corners_calibration"], "Κόρνερ - ανά απόκλιση": r["corners_by_deviation"],
+        "Προβλέψεις": r["predictions"],
+    })
+    print(f"\nExcel: {out}")
+
+
+FOLDS = [(["2223", "2324"], "2425"), (["2324", "2425"], "2526")]
 
 
 def main(argv=None):
@@ -194,6 +227,11 @@ def main(argv=None):
     p.add_argument("--test", default="2526", help="σεζόν προβλέψεων, π.χ. 2526")
     p.add_argument("--out", help="αρχείο Excel εξόδου")
     p.set_defaults(func=cmd_season_test)
+
+    p = sub.add_parser("experiments", help="πείραμα: μοντέλο σουτ εντός εστίας & κόρνερ (2 folds)")
+    p.add_argument("--leagues", nargs="+", default=config.DEFAULT_LEAGUES)
+    p.add_argument("--out", help="αρχείο Excel εξόδου")
+    p.set_defaults(func=cmd_experiments)
 
     args = ap.parse_args(argv)
     args.func(args)
