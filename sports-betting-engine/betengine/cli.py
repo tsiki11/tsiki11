@@ -122,6 +122,30 @@ def cmd_predict(args):
     print("Υπενθύμιση: πιθανότητες, όχι βεβαιότητες. Έλεγξε την απόδοση τη στιγμή του στοιχήματος.")
 
 
+def cmd_season_test(args):
+    from . import season_test
+    leagues = _leagues(args)
+    matches = data.load_matches(leagues, args.train + [args.test])
+    print(f"Εκμάθηση: {', '.join(args.train)} | Προβλέψεις: {args.test} | Λίγκες: {' '.join(leagues)}")
+    r = season_test.run(matches, args.train, args.test)
+    cols = ["τρόπος", "λίγκα", "αγώνες", "1X2_σωστά_μοντέλο", "1X2_σωστά_φαβορί_αγοράς",
+            "log_loss_μοντέλο", "log_loss_αγορά", "OU_σωστά_μοντέλο", "OU_σωστά_αγορά"]
+    print("\n--- Μοντέλο vs αγορά ---")
+    print(r["summary"][cols].round(3).to_string(index=False))
+    b = r["bet_summary"]
+    b = b[b["ομάδα"] == "ΣΥΝΟΛΟ"]
+    print("\n--- Value bets (flat 1 μονάδα, edge >= 5%) ---")
+    print(b[["σενάριο", "στοιχήματα", "hit_rate", "κέρδος_μονάδες", "ROI", "ROI_SE", "μέσο_CLV"]]
+          .round(3).to_string(index=False))
+    out = report.write_excel(args.out or config.REPORTS_DIR / f"season_test_{args.test}.xlsx", {
+        "Σύνοψη": r["summary"], "Value bets σύνοψη": r["bet_summary"], "Value bets": r["bets"],
+        "Αγώνες - frozen": r["frozen_matches"], "Αγώνες - walk-forward": r["wf_matches"],
+        "Νεοφώτιστες": r["promoted"],
+    }, highlight={"Αγώνες - frozen": "σωστό_μοντέλο", "Αγώνες - walk-forward": "σωστό_μοντέλο",
+                  "Value bets": "won"})
+    print(f"\nExcel: {out}")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="betengine", description="Μηχανή στατιστικών & value betting ποδοσφαίρου")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -163,6 +187,13 @@ def main(argv=None):
     betting(p)
     p.add_argument("--bankroll", type=float, default=1000.0)
     p.set_defaults(func=cmd_predict)
+
+    p = sub.add_parser("season-test", help="εκμάθηση σε κάποιες σεζόν, προβλέψεις σε άλλη, σύγκριση με τα πραγματικά")
+    p.add_argument("--leagues", nargs="+", default=config.DEFAULT_LEAGUES)
+    p.add_argument("--train", nargs="+", default=["2324", "2425"], help="σεζόν εκμάθησης, π.χ. 2324 2425")
+    p.add_argument("--test", default="2526", help="σεζόν προβλέψεων, π.χ. 2526")
+    p.add_argument("--out", help="αρχείο Excel εξόδου")
+    p.set_defaults(func=cmd_season_test)
 
     args = ap.parse_args(argv)
     args.func(args)
