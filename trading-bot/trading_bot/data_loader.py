@@ -76,7 +76,7 @@ def load_dukascopy_h1(symbol: str, start: str, end: str, refresh: bool = False) 
         for side in ("BID", "ASK"):
             url = DUKA_URL.format(sym=symbol, y=p.year, m=p.month - 1, side=side)
             sides[side] = _decode_month(_fetch(url), p.year, p.month, spec.point)
-            time.sleep(1.0)  # be polite to the free service (bursts get throttled)
+            time.sleep(2.5)  # be polite to the free service (bursts get throttled)
         if sides["BID"].empty or sides["ASK"].empty:
             log.warning("no data for %s %s", symbol, p)
             continue
