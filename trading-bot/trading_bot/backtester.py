@@ -36,19 +36,20 @@ class BacktestResult:
 
 
 def apply_spread_model(df: pd.DataFrame, cost: CostModel, pip: float, spread_multiplier: float = 1.0) -> pd.DataFrame:
-    if spread_multiplier == 1.0 and cost.extra_spread_pips == 0:
-        return df
+    """Scale/widen the recorded spread. Crossed quotes (ask < bid, seen in aggregated feeds)
+    are floored at `cost.min_spread_pips` so they can never create a cost *rebate*."""
     out = df.copy()
     for k in ("open", "high", "low", "close"):
         mid = (df[f"bid_{k}"] + df[f"ask_{k}"]) / 2
-        half = (df[f"ask_{k}"] - df[f"bid_{k}"]) / 2 * spread_multiplier + cost.extra_spread_pips * pip / 2
+        raw = np.maximum(df[f"ask_{k}"] - df[f"bid_{k}"], cost.min_spread_pips * pip)
+        half = raw / 2 * spread_multiplier + cost.extra_spread_pips * pip / 2
         out[f"bid_{k}"], out[f"ask_{k}"] = mid - half, mid + half
     return out
 
 
 def run_backtest(data: pd.DataFrame, signals: pd.DataFrame, spec: InstrumentSpec,
                  risk: RiskConfig, cost: CostModel, start=None, end=None,
-                 spread_multiplier: float = 1.0) -> BacktestResult:
+                 spread_multiplier: float = 1.0, max_gap_hours: float = 72.0) -> BacktestResult:
     """`data`/`signals` may include warm-up history; trading only between start and end."""
     df = apply_spread_model(data, cost, spec.pip, spread_multiplier)
     sig = signals.reindex(df.index)
@@ -67,6 +68,11 @@ def run_backtest(data: pd.DataFrame, signals: pd.DataFrame, spec: InstrumentSpec
     ex_l = sig["exit_long"].fillna(False).astype(bool).values
     ex_s = sig["exit_short"].fillna(False).astype(bool).values
 
+    # bars followed by a hole in the data longer than a normal weekend: we cannot know what
+    # happened inside the hole, so the position is closed at this bar's close (neutral) instead of
+    # inventing a gap fill weeks later, and no new entry is queued across the hole.
+    gap_h = np.diff(t.values).astype("timedelta64[s]").astype(float) / 3600.0
+    nxt_gap = np.append(gap_h, 0.0) > max_gap_hours
     equity = risk.initial_equity
     eq_curve = np.empty(len(df))
     trades = []
@@ -136,6 +142,9 @@ def run_backtest(data: pd.DataFrame, signals: pd.DataFrame, spec: InstrumentSpec
             elif tp_hit:
                 close(i, pos["tp"], "TP")
         # ---------- at the CLOSE of bar i: mark to market, read signals
+        if pos is not None and nxt_gap[i]:
+            d = pos["dir"]
+            close(i, (bc[i] - slip) if d > 0 else (ac[i] + slip), "data_gap_close")
         if pos is not None:
             d = pos["dir"]
             mtm = (bc[i] if d > 0 else ac[i]) - pos["entry"]
@@ -145,7 +154,7 @@ def run_backtest(data: pd.DataFrame, signals: pd.DataFrame, spec: InstrumentSpec
         else:
             eq_curve[i] = equity
         e = entry_sig[i]
-        if e != 0 and i + 1 < len(df):
+        if e != 0 and i + 1 < len(df) and not nxt_gap[i]:
             flat_next = pos is None or pend_exit
             if flat_next or (pos is not None and pos["dir"] != e and pend_exit):
                 pend_entry = (e, sl_d[i], tp_d[i], t[i])

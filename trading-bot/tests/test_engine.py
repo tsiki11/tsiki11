@@ -83,3 +83,23 @@ def test_htf_alignment_has_no_lookahead():
     assert np.isnan(a.loc[idx[2], "v"])
     # 1H bar 03:00 closes 04:00 -> 4H bar 00-04 complete -> value 1
     assert a.loc[idx[3], "v"] == 1.0 and a.loc[idx[7], "v"] == 2.0 and a.loc[idx[6], "v"] == 1.0
+
+
+def test_position_closed_before_data_hole():
+    """A multi-day hole in the data must not produce an artificial gap fill."""
+    import numpy as np, pandas as pd
+    from trading_bot.backtester import run_backtest
+    from trading_bot.config import INSTRUMENTS, RiskConfig, CostModel
+    idx = list(pd.date_range("2024-01-08 00:00", periods=5, freq="h", tz="UTC")) + \
+          list(pd.date_range("2024-01-22 00:00", periods=3, freq="h", tz="UTC"))
+    idx = pd.DatetimeIndex(idx)
+    mid = np.array([1.1000, 1.1000, 1.1005, 1.1010, 1.1010, 1.0500, 1.0500, 1.0500])
+    df = pd.DataFrame({f"{s}_{k}": mid + (0.00001 if s == "ask" else -0.00001)
+                       for s in ("bid", "ask") for k in ("open", "high", "low", "close")}, index=idx)
+    sig = pd.DataFrame({"entry": [1, 0, 0, 0, 0, 0, 0, 0], "sl_dist": 0.0020, "tp_dist": 0.0040,
+                        "exit_long": False, "exit_short": False}, index=idx)
+    r = run_backtest(df, sig, INSTRUMENTS["EURUSD"], RiskConfig(), CostModel(swap_per_lot_night=0))
+    assert len(r.trades) == 1
+    t = r.trades.iloc[0]
+    assert t["exit_reason"] == "data_gap_close" and t["exit_time"] == idx[4]
+    assert t["R"] > -1.0          # not the -25R gap that a naive engine would book

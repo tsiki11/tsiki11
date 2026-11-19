@@ -8,6 +8,11 @@ Dukascopy (primary, intraday FX/metals):
   traded/tick volume -- NOT total market volume (FX is decentralised).
   Non-trading hours are filled with flat zero-volume candles (removed by the validator).
 
+FXCM public candle archive (used when Dukascopy blocked us, see FX_FRAMEWORK.md):
+  https://candledata.fxcorporate.com/H1/{SYMBOL}/{YYYY}/{WEEK}.csv.gz  (weekly files, WEEK 1..53)
+  Columns: DateTime (UTC, candle OPEN time), Bid/Ask Open/High/Low/Close. No volume.
+  Prices are FXCM's own retail feed (spread may include FXCM markup).
+
 Yahoo (secondary, cross-check only): EURUSD=X daily (long history) and 1h (last ~730 days).
 """
 from __future__ import annotations
@@ -89,6 +94,50 @@ def load_dukascopy_h1(symbol: str, start: str, end: str, refresh: bool = False) 
     out.index = pd.to_datetime(out.index, utc=True)
     out.index.name = "time_utc"
     return out.loc[pd.Timestamp(start, tz="UTC"): pd.Timestamp(end, tz="UTC")]
+
+
+FXCM_URL = "https://candledata.fxcorporate.com/H1/{sym}/{y}/{w}.csv.gz"
+
+
+def _parse_fxcm(raw: bytes) -> pd.DataFrame:
+    if not raw:
+        return pd.DataFrame()
+    d = pd.read_csv(io.BytesIO(raw), compression="gzip")
+    idx = pd.to_datetime(d["DateTime"], format="%m/%d/%Y %H:%M:%S.%f", utc=True)
+    out = pd.DataFrame(index=idx)
+    for side in ("Bid", "Ask"):
+        for f in ("Open", "High", "Low", "Close"):
+            out[f"{side.lower()}_{f.lower()}"] = d[f"{side}{f}"].to_numpy(float)
+        out[f"{side.lower()}_volume"] = np.nan        # FXCM archive has no volume
+    return out
+
+
+def load_fxcm_h1(symbol: str, start: str, end: str, refresh: bool = False) -> pd.DataFrame:
+    """Hourly BID+ASK OHLC (UTC) from FXCM's free archive. Cached per week under data/fx/fxcm_{symbol}/."""
+    cache_dir = DATA_DIR / f"fxcm_{symbol}"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    t0, t1 = pd.Timestamp(start, tz="UTC"), pd.Timestamp(end, tz="UTC")
+    now = pd.Timestamp.now(tz="UTC")
+    frames = []
+    for y in range(t0.year, t1.year + 1):
+        for w in range(1, 54):
+            f = cache_dir / f"{y}-{w:02d}.csv.gz"
+            if f.exists() and not refresh:
+                frames.append(pd.read_csv(f, index_col=0, parse_dates=True))
+                continue
+            raw = _fetch(FXCM_URL.format(sym=symbol, y=y, w=w), retries=5)
+            df = _parse_fxcm(raw)
+            time.sleep(0.5)
+            if df.empty:
+                continue
+            if df.index[-1] < now - pd.Timedelta(days=8):   # never cache a still-growing week
+                df.to_csv(f, compression="gzip")
+            frames.append(df)
+    out = pd.concat(frames)
+    out.index = pd.to_datetime(out.index, utc=True)
+    out = out[~out.index.duplicated(keep="last")].sort_index()
+    out.index.name = "time_utc"
+    return out.loc[t0:t1]
 
 
 def load_yahoo(ticker: str, interval: str = "1d", start: str | None = None,

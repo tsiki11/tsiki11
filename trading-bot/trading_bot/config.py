@@ -34,14 +34,16 @@ INSTRUMENTS = {
 class CostModel:
     """Transaction-cost ASSUMPTIONS (ECN-style account).
 
-    * spread: taken from the data (real Dukascopy bid/ask at each bar).
-    * extra_spread_pips: added on top of the data spread (0 = Dukascopy ECN spread).
+    * spread: taken from the data (real bid/ask of the feed at each bar).
+    * min_spread_pips: floor for crossed/zero quotes (ask <= bid) in aggregated feeds.
+    * extra_spread_pips: added on top of the data spread (0 = feed spread as recorded).
     * commission_per_lot_side: USD per 100k units per side (typical ECN $3.5).
     * slippage_pips: adverse slippage on market & stop orders (not on TP limits).
     * swap_per_lot_night: USD charged per standard lot per night held, BOTH
       directions (conservative: ignores positive carry); x3 on Wednesday rollover.
     """
     extra_spread_pips: float = 0.0
+    min_spread_pips: float = 0.0
     commission_per_lot_side: float = 3.5
     slippage_pips: float = 0.1
     swap_per_lot_night: float = 6.0

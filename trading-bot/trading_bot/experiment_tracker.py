@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import numpy as np
 import pandas as pd
@@ -24,7 +24,7 @@ def _clean(o):
         return int(o)
     if isinstance(o, (np.bool_,)):
         return bool(o)
-    if isinstance(o, (pd.Timestamp, datetime)):
+    if isinstance(o, (pd.Timestamp, datetime, date)):
         return str(o)
     return o
 

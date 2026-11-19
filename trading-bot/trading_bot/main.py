@@ -60,7 +60,29 @@ def lookahead_test(strategy, data: pd.DataFrame, cutoff: str) -> float:
     return float((a["entry"] - trunc["entry"].astype(float)).abs().sum())
 
 
-def run_experiment(strategy_id: str, symbol: str = "EURUSD", params: dict | None = None, run_oos: bool = False):
+SOURCES = {"fxcm": (DL.load_fxcm_h1, "FXCM public archive (candledata.fxcorporate.com)"),
+           "dukascopy": (DL.load_dukascopy_h1, "Dukascopy (datafeed.dukascopy.com)")}
+
+
+def cross_check_sources(a: pd.DataFrame, b: pd.DataFrame, pip: float) -> dict:
+    """Compare two hourly bid/ask feeds on common timestamps (timezone + level + spread check)."""
+    ma, mb = (a["bid_close"] + a["ask_close"]) / 2, (b["bid_close"] + b["ask_close"]) / 2
+    common = ma.index.intersection(mb.index)
+    if len(common) < 100:
+        return {"common_hours": int(len(common))}
+    ra, rb = ma.pct_change(), mb.pct_change()
+    lag_corr = {f"{k:+d}h": float(ra.corr(rb.shift(k))) for k in (-2, -1, 0, 1, 2)}
+    diff = (ma.loc[common] - mb.loc[common]).abs() / pip
+    sa = (a["ask_close"] - a["bid_close"]).loc[common] / pip
+    sb = (b["ask_close"] - b["bid_close"]).loc[common] / pip
+    return {"common_hours": int(len(common)), "period": [str(common[0]), str(common[-1])],
+            "hourly_return_corr_by_lag": lag_corr,
+            "mid_close_abs_diff_pips": {"median": float(diff.median()), "p99": float(diff.quantile(.99))},
+            "median_spread_pips": {"primary": float(sa.median()), "secondary": float(sb.median())}}
+
+
+def run_experiment(strategy_id: str, symbol: str = "EURUSD", params: dict | None = None, run_oos: bool = False,
+                   source: str = "fxcm"):
     split, risk, cost, crit = SplitConfig(), RiskConfig(), CostModel(), AcceptanceCriteria()
     spec = INSTRUMENTS[symbol]
     strat = REGISTRY[strategy_id](params)
@@ -70,8 +92,17 @@ def run_experiment(strategy_id: str, symbol: str = "EURUSD", params: dict | None
     log.info("experiment %s", exp_id)
 
     # ---------------- data + validation
-    raw = DL.load_dukascopy_h1(symbol, split.warmup_start, split.end)
-    data, dq = DV.validate_fx(raw, "Dukascopy (datafeed.dukascopy.com)", symbol, "1H", pip=spec.pip)
+    loader, src_name = SOURCES[source]
+    raw = loader(symbol, split.warmup_start, split.end)
+    data, dq = DV.validate_fx(raw, src_name, symbol, "1H", pip=spec.pip)
+    if source == "fxcm":   # partial Dukascopy cache (download was blocked) -> independent cross-check
+        duka_dir = DL.DATA_DIR / symbol
+        if duka_dir.exists() and any(duka_dir.glob("*.csv.gz")):
+            files = sorted(duka_dir.glob("*.csv.gz"))
+            duka = pd.concat(pd.read_csv(f, index_col=0, parse_dates=True) for f in files)
+            duka.index = pd.to_datetime(duka.index, utc=True)
+            duka, _ = DV.validate_fx(duka, "Dukascopy cache", symbol, "1H", pip=spec.pip)
+            dq["cross_check_vs_dukascopy"] = cross_check_sources(data, duka, spec.pip)
     try:
         yd = DL.load_yahoo("EURUSD=X", "1d", start=split.warmup_start)
         dq["cross_check_vs_yahoo_daily"] = DV.cross_check_daily(data, yd) if len(yd) else "yahoo unavailable"
@@ -179,11 +210,12 @@ def main():
     ap.add_argument("--strategy", default="S001")
     ap.add_argument("--symbol", default="EURUSD")
     ap.add_argument("--run-oos", action="store_true")
+    ap.add_argument("--source", default="fxcm", choices=list(SOURCES))
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
                         handlers=[logging.StreamHandler(sys.stdout)])
     logging.getLogger("yfinance").setLevel(logging.CRITICAL)
-    rec, summary, stress, sens, wf, mc, out = run_experiment(a.strategy, a.symbol, run_oos=a.run_oos)
+    rec, summary, stress, sens, wf, mc, out = run_experiment(a.strategy, a.symbol, run_oos=a.run_oos, source=a.source)
     pd.set_option("display.width", 200)
     print("\n=== SUMMARY (net of costs) ===\n", summary.to_string())
     print("\n=== ACCEPTANCE (validation) ===\n", json.dumps(ET._clean(rec["acceptance_validation"]), indent=1))
