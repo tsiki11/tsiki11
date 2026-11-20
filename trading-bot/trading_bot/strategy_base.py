@@ -26,6 +26,7 @@ class Strategy(ABC):
     name: str = "base"
     version: str = "0.0"
     hypothesis: str = ""
+    timeframe: str = "1H"          # signal / confirmation timeframes (label for the tracker)
 
     def __post_init__(self):
         merged = dict(self.default_params())
@@ -34,6 +35,11 @@ class Strategy(ABC):
 
     @classmethod
     def default_params(cls) -> dict:
+        return {}
+
+    @classmethod
+    def sensitivity_grid(cls) -> dict:
+        """Parameter grid for the IS sensitivity diagnostic (never used to pick parameters)."""
         return {}
 
     @abstractmethod

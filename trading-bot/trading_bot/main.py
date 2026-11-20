@@ -145,8 +145,7 @@ def run_experiment(strategy_id: str, symbol: str = "EURUSD", params: dict | None
                             "profit_factor": m.get("Profit factor"), "expectancy_R": m.get("Expectancy (R)"),
                             "max_dd": m["Max drawdown"]})
     stress = pd.DataFrame(stress_rows)
-    sens = OPT.sensitivity(type(strat), strat.params, {"sl_atr": [1.0, 1.5, 2.0], "rr": [1.5, 2.0, 3.0],
-                                                       "adx_min": [15, 20, 25]},
+    sens = OPT.sensitivity(type(strat), strat.params, strat.sensitivity_grid(),
                            data, spec, risk, cost, split.is_start, segs["in_sample"][1], rf)
     mc = MC.bootstrap_trades(dev.trades["R"], risk.risk_per_trade) if len(dev.trades) else {}
 
@@ -192,7 +191,7 @@ def run_experiment(strategy_id: str, symbol: str = "EURUSD", params: dict | None
         V.r_histogram(dev.trades, out / "r_distribution.png", f"{strat.strategy_id}: trade outcomes, IS + validation")
 
     record = {"experiment_id": exp_id, "strategy_id": strat.strategy_id, "strategy_name": strat.name,
-              "version": strat.version, "hypothesis": strat.hypothesis, "asset": symbol, "timeframe": "1H (4H confirm)",
+              "version": strat.version, "hypothesis": strat.hypothesis, "asset": symbol, "timeframe": strat.timeframe,
               "data_source": dq["source"], "historical_period": {"warmup": split.warmup_start, **asdict(split)},
               "params": strat.params, "risk_settings": asdict(risk), "transaction_costs": asdict(cost),
               "acceptance_criteria": crit.as_dict(), "lookahead_test_diff": la,

@@ -103,3 +103,20 @@ def test_position_closed_before_data_hole():
     t = r.trades.iloc[0]
     assert t["exit_reason"] == "data_gap_close" and t["exit_time"] == idx[4]
     assert t["R"] > -1.0          # not the -25R gap that a naive engine would book
+
+
+def test_htf_event_fires_once_and_daily_bars_roll_at_21utc():
+    import numpy as np, pandas as pd
+    from trading_bot import indicators as I
+    idx = pd.date_range("2024-01-08 00:00", periods=48, freq="h", tz="UTC")
+    m = pd.DataFrame({"open": 1.0, "high": 1.0, "low": 1.0, "close": np.arange(48, dtype=float)}, index=idx)
+    h4 = I.resample_ohlc(m, "4h")
+    v = I.htf_on_ltf(pd.DataFrame({"c": h4.close}, index=h4.index), "4h", idx)
+    # 4H bar 00-04 is complete at the close of the 03:00 1H bar -> fresh exactly there
+    assert v["fresh"].iloc[3] and not v["fresh"].iloc[2] and not v["fresh"].iloc[4]
+    assert v["c"].iloc[3] == 3.0 and np.isnan(v["c"].iloc[2])
+    assert int(v["fresh"].sum()) == 12
+    d1 = I.resample_ohlc(m, "24h", offset="21h", min_bars=6)
+    assert d1.index[0] == pd.Timestamp("2024-01-07 21:00", tz="UTC") and d1.close.iloc[0] == 20.0
+    d = I.align_htf(d1, "24h", idx)
+    assert np.isnan(d["close"].iloc[19]) and d["close"].iloc[20] == 20.0   # known at 21:00 close

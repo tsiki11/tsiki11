@@ -36,13 +36,17 @@ from ..strategy_base import Strategy
 class MACrossBaseline(Strategy):
     def __init__(self, params: dict | None = None):
         super().__init__(params=params or {}, strategy_id="S001", name="MA20/50 cross + 4H trend",
-                         version="1.0", hypothesis=__doc__.split("\n\n")[1].strip())
+                         version="1.0", hypothesis=__doc__.split("\n\n")[1].strip(), timeframe="1H entry, 4H confirm")
 
     @classmethod
     def default_params(cls) -> dict:
         return {"fast": 20, "slow": 50, "rsi_n": 14, "rsi_long_max": 70, "rsi_short_min": 30,
                 "adx_n": 14, "adx_min": 20, "atr_n": 14, "sl_atr": 1.5, "rr": 2.0,
                 "htf": "4h", "exit_on_opposite_cross": True}
+
+    @classmethod
+    def sensitivity_grid(cls) -> dict:
+        return {"sl_atr": [1.0, 1.5, 2.0], "rr": [1.5, 2.0, 3.0], "adx_min": [15, 20, 25]}
 
     def generate_signals(self, data: pd.DataFrame) -> pd.DataFrame:
         p = self.params

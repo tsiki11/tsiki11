@@ -1,0 +1,562 @@
+{
+ "experiment_id": "S003_v1.0_EURUSD_20261120T172549",
+ "strategy_id": "S003",
+ "strategy_name": "4H Donchian breakout + D1 trend",
+ "version": "1.0",
+ "hypothesis": "Hypothesis: when EURUSD closes a 4H bar beyond its 20-bar (~3.5 trading days) range in the\ndirection of the daily trend (D1 MA20 vs MA50), the breakout continues often and far enough\nthat a 3R target / trailing channel exit pays for the frequent small losses net of costs.\nChannel breakouts are the canonical trend-following entry (Donchian; Turtle rules, Faith 2007;\nClenow 2013) and capture the multi-day FX momentum documented by Menkhoff et al. (2012).",
+ "asset": "EURUSD",
+ "timeframe": "4H entry, D1 confirm",
+ "data_source": "FXCM public archive (candledata.fxcorporate.com)",
+ "historical_period": {
+  "warmup": "2015-07-01",
+  "warmup_start": "2015-07-01",
+  "is_start": "2016-01-01",
+  "val_start": "2022-07-01",
+  "oos_start": "2024-09-01",
+  "end": "2026-10-31 23:59"
+ },
+ "params": {
+  "entry_n": 20,
+  "exit_n": 10,
+  "fast": 20,
+  "slow": 50,
+  "atr_n": 14,
+  "sl_atr": 2.0,
+  "rr": 3.0
+ },
+ "risk_settings": {
+  "initial_equity": 10000.0,
+  "risk_per_trade": 0.005,
+  "max_risk_per_trade": 0.01,
+  "max_leverage": 30.0,
+  "max_open_positions": 1
+ },
+ "transaction_costs": {
+  "extra_spread_pips": 0.0,
+  "min_spread_pips": 0.0,
+  "commission_per_lot_side": 3.5,
+  "slippage_pips": 0.1,
+  "swap_per_lot_night": 6.0,
+  "rollover_hour_utc": 21
+ },
+ "acceptance_criteria": {
+  "min_sharpe": 1.0,
+  "min_profit_factor": 1.2,
+  "max_drawdown": 0.2,
+  "min_net_return": 0.0,
+  "min_trades_per_segment": 50,
+  "min_expectancy_r": 0.0,
+  "min_positive_wf_windows": 0.6,
+  "gate_rule": "validation passes all criteria AND in-sample expectancy > 0"
+ },
+ "lookahead_test_diff": 0.0,
+ "results": {
+  "in_sample": {
+   "Start": "2016-01-03",
+   "End": "2022-06-30",
+   "Years": 6.49,
+   "Initial equity": 10000.0,
+   "Final equity": 10186.484187074002,
+   "Net profit": 186.48418707400197,
+   "Total return": 0.018648418707400305,
+   "CAGR": 0.0028515197574126017,
+   "Ann. volatility": 0.037530193643554755,
+   "Sharpe (excess)": -0.10783401646680459,
+   "Sharpe (rf=0)": 0.09460060798393544,
+   "Sortino": -0.13124727173051715,
+   "Max drawdown": -0.08040458535257666,
+   "VaR 95% (daily)": 0.0036564692131722254,
+   "CVaR 95% (daily)": 0.005051867568940456,
+   "Calmar": 0.0354646410389233,
+   "Total trades": 204,
+   "Trades / year": 31.438687786782936,
+   "Long trades": 93,
+   "Short trades": 111,
+   "Win rate": 0.3284313725490196,
+   "Profit factor": 1.1031503681931911,
+   "Expectancy ($/trade)": 2.856785230755396,
+   "Expectancy (R)": 0.06114799970572771,
+   "Avg trade return (% equity)": 0.00030483443340168626,
+   "Average win ($)": 93.02440233165885,
+   "Average loss ($)": -41.23978663610979,
+   "Payoff ratio": 2.2556955289920477,
+   "Max consecutive losses": 7,
+   "Avg holding (hours)": 89.79411764705883,
+   "Worst trade (R)": -1.1328644357130366,
+   "Trades losing > 1.1R (gaps/slippage)": 5,
+   "Total costs ($)": 525.5900000000001
+  },
+  "validation": {
+   "Start": "2022-07-01",
+   "End": "2024-08-23",
+   "Years": 2.15,
+   "Initial equity": 10000.0,
+   "Final equity": 9121.331758996601,
+   "Net profit": -878.6682410033991,
+   "Total return": -0.08786682410033986,
+   "CAGR": -0.04189811992166936,
+   "Ann. volatility": 0.03658789731614571,
+   "Sharpe (excess)": -2.331298551988758,
+   "Sharpe (rf=0)": -1.1514705044505509,
+   "Sortino": -2.7597465773726513,
+   "Max drawdown": -0.136182668297398,
+   "VaR 95% (daily)": 0.0044059713703444026,
+   "CVaR 95% (daily)": 0.0056379437653567175,
+   "Calmar": -0.3076611763118897,
+   "Total trades": 64,
+   "Trades / year": 29.784667657676792,
+   "Long trades": 28,
+   "Short trades": 36,
+   "Win rate": 0.265625,
+   "Profit factor": 0.6187505674496957,
+   "Expectancy ($/trade)": -12.03325376567808,
+   "Expectancy (R)": -0.25183957174908367,
+   "Avg trade return (% equity)": -0.0012380313330297708,
+   "Average win ($)": 73.52254509172879,
+   "Average loss ($)": -42.97896824601673,
+   "Payoff ratio": 1.7106633335373942,
+   "Max consecutive losses": 13,
+   "Avg holding (hours)": 83.203125,
+   "Worst trade (R)": -1.1230040542044701,
+   "Trades losing > 1.1R (gaps/slippage)": 2,
+   "Total costs ($)": 144.31
+  }
+ },
+ "benchmarks": {
+  "in_sample": {
+   "EURUSD long 1x (no carry/costs)": {
+    "Start": "2016-01-03",
+    "End": "2022-06-30",
+    "Years": 6.49,
+    "Initial equity": 10000.0,
+    "Final equity": 9642.357596392749,
+    "Net profit": -357.64240360725125,
+    "Total return": -0.03576424036072512,
+    "CAGR": -0.005596924257856073,
+    "Ann. volatility": 0.07131942463006868,
+    "Sharpe (excess)": -0.14661436716183152,
+    "Sharpe (rf=0)": -0.04003997451563769,
+    "Sortino": -0.21583118915220353,
+    "Max drawdown": -0.1746028583837026,
+    "VaR 95% (daily)": 0.006643402608630683,
+    "CVaR 95% (daily)": 0.008773045289840381,
+    "Calmar": -0.03205516971295178,
+    "Total trades": 0
+   },
+   "EURUSD short 1x (no carry/costs)": {
+    "Start": "2016-01-03",
+    "End": "2022-06-30",
+    "Years": 6.49,
+    "Initial equity": 10000.0,
+    "Final equity": 10357.64240360725,
+    "Net profit": 357.64240360724943,
+    "Total return": 0.03576424036072501,
+    "CAGR": 0.005430088620835827,
+    "Ann. volatility": 0.07808098338541151,
+    "Sharpe (excess)": 0.008253417755612148,
+    "Sharpe (rf=0)": 0.10562223316015322,
+    "Sortino": 0.011996483990952688,
+    "Max drawdown": -0.1927376756694995,
+    "VaR 95% (daily)": 0.007269777475105177,
+    "CVaR 95% (daily)": 0.009947592120385818,
+    "Calmar": 0.02817346739278506,
+    "Total trades": 0
+   },
+   "Cash (T-bills)": {
+    "Total return": 0.0507784273104952,
+    "Years": 6.49
+   }
+  },
+  "validation": {
+   "EURUSD long 1x (no carry/costs)": {
+    "Start": "2022-07-01",
+    "End": "2024-08-23",
+    "Years": 2.15,
+    "Initial equity": 10000.0,
+    "Final equity": 10688.528973604802,
+    "Net profit": 688.5289736048016,
+    "Total return": 0.06885289736048006,
+    "CAGR": 0.03147329251532227,
+    "Ann. volatility": 0.08011691052172547,
+    "Sharpe (excess)": -0.09493212878521316,
+    "Sharpe (rf=0)": 0.451160611998491,
+    "Sortino": -0.13575765398020065,
+    "Max drawdown": -0.08903605943695314,
+    "VaR 95% (daily)": 0.00721924874765601,
+    "CVaR 95% (daily)": 0.01023807634132139,
+    "Calmar": 0.3534892796733514,
+    "Total trades": 0
+   },
+   "EURUSD short 1x (no carry/costs)": {
+    "Start": "2022-07-01",
+    "End": "2024-08-23",
+    "Years": 2.15,
+    "Initial equity": 10000.0,
+    "Final equity": 9311.4710263952,
+    "Net profit": -688.5289736047998,
+    "Total return": -0.06885289736047995,
+    "CAGR": -0.032654609783405286,
+    "Ann. volatility": 0.08061089232842843,
+    "Sharpe (excess)": -0.9391295521543886,
+    "Sharpe (rf=0)": -0.3956900279709011,
+    "Sortino": -1.3175257533035871,
+    "Max drawdown": -0.1506627089736452,
+    "VaR 95% (daily)": 0.007726891301213912,
+    "CVaR 95% (daily)": 0.010694275591271826,
+    "Calmar": -0.21673982902509353,
+    "Total trades": 0
+   },
+   "Cash (T-bills)": {
+    "Total return": 0.10045883971975056,
+    "Years": 2.15
+   }
+  }
+ },
+ "walk_forward_positive_share": 0.42105263157894735,
+ "walk_forward_windows": [
+  {
+   "window_start": "2016-01-03",
+   "window_end": "2016-01-31",
+   "return": -0.009462945631463326,
+   "trades": 2,
+   "win_rate": 0.0,
+   "expectancy_R": -0.984260847805927,
+   "max_dd": -0.010064331550046712
+  },
+  {
+   "window_start": "2016-02-01",
+   "window_end": "2016-07-31",
+   "return": 0.016753560475070595,
+   "trades": 16,
+   "win_rate": 0.375,
+   "expectancy_R": 0.23076881937921176,
+   "max_dd": -0.02266175793096159
+  },
+  {
+   "window_start": "2016-08-01",
+   "window_end": "2017-01-31",
+   "return": -0.00923971707690685,
+   "trades": 14,
+   "win_rate": 0.2857142857142857,
+   "expectancy_R": -0.11775952887142804,
+   "max_dd": -0.01867977028433354
+  },
+  {
+   "window_start": "2017-02-01",
+   "window_end": "2017-07-31",
+   "return": 0.043499415345213954,
+   "trades": 14,
+   "win_rate": 0.5714285714285714,
+   "expectancy_R": 0.7575077638995532,
+   "max_dd": -0.016478316715912822
+  },
+  {
+   "window_start": "2017-08-01",
+   "window_end": "2018-01-31",
+   "return": 0.005762285108928289,
+   "trades": 17,
+   "win_rate": 0.35294117647058826,
+   "expectancy_R": 0.08282112313129217,
+   "max_dd": -0.04055274901804429
+  },
+  {
+   "window_start": "2018-02-01",
+   "window_end": "2018-07-31",
+   "return": 0.0015775573248808517,
+   "trades": 18,
+   "win_rate": 0.2222222222222222,
+   "expectancy_R": 0.05485849862521256,
+   "max_dd": -0.02692336962751174
+  },
+  {
+   "window_start": "2018-08-01",
+   "window_end": "2019-01-31",
+   "return": -0.018756601876246726,
+   "trades": 13,
+   "win_rate": 0.23076923076923078,
+   "expectancy_R": -0.31006493323513706,
+   "max_dd": -0.04262594158530686
+  },
+  {
+   "window_start": "2019-02-01",
+   "window_end": "2019-07-31",
+   "return": 0.017290946633750748,
+   "trades": 13,
+   "win_rate": 0.46153846153846156,
+   "expectancy_R": 0.28740940220421496,
+   "max_dd": -0.016659908574840343
+  },
+  {
+   "window_start": "2019-08-01",
+   "window_end": "2020-01-31",
+   "return": -0.023720767231423467,
+   "trades": 19,
+   "win_rate": 0.21052631578947367,
+   "expectancy_R": -0.21042723730626708,
+   "max_dd": -0.03192026167037709
+  },
+  {
+   "window_start": "2020-02-01",
+   "window_end": "2020-07-31",
+   "return": 0.029160505823544014,
+   "trades": 17,
+   "win_rate": 0.47058823529411764,
+   "expectancy_R": 0.4833960077122326,
+   "max_dd": -0.024479377453344164
+  },
+  {
+   "window_start": "2020-08-01",
+   "window_end": "2021-01-31",
+   "return": -0.025081774398944878,
+   "trades": 18,
+   "win_rate": 0.2777777777777778,
+   "expectancy_R": -0.2693852707850052,
+   "max_dd": -0.029008096953820117
+  },
+  {
+   "window_start": "2021-02-01",
+   "window_end": "2021-07-31",
+   "return": -0.013811364582309804,
+   "trades": 13,
+   "win_rate": 0.3076923076923077,
+   "expectancy_R": -0.16418073816148832,
+   "max_dd": -0.02307315665670784
+  },
+  {
+   "window_start": "2021-08-01",
+   "window_end": "2022-01-31",
+   "return": -0.019176778399449756,
+   "trades": 15,
+   "win_rate": 0.26666666666666666,
+   "expectancy_R": -0.2218717460384464,
+   "max_dd": -0.03755705774478202
+  },
+  {
+   "window_start": "2022-02-01",
+   "window_end": "2022-07-31",
+   "return": 0.044025230435081886,
+   "trades": 18,
+   "win_rate": 0.3888888888888889,
+   "expectancy_R": 0.5390177198710971,
+   "max_dd": -0.01991781423399941
+  },
+  {
+   "window_start": "2022-08-01",
+   "window_end": "2023-01-31",
+   "return": -0.01899044630147595,
+   "trades": 18,
+   "win_rate": 0.2777777777777778,
+   "expectancy_R": -0.19237141187568788,
+   "max_dd": -0.04060717589011664
+  },
+  {
+   "window_start": "2023-02-01",
+   "window_end": "2023-07-31",
+   "return": -0.039178704618883065,
+   "trades": 14,
+   "win_rate": 0.14285714285714285,
+   "expectancy_R": -0.5803955463910072,
+   "max_dd": -0.0641464899356835
+  },
+  {
+   "window_start": "2023-08-01",
+   "window_end": "2024-01-31",
+   "return": -0.013948939320006737,
+   "trades": 14,
+   "win_rate": 0.2857142857142857,
+   "expectancy_R": -0.1624097061137968,
+   "max_dd": -0.021711091475607236
+  },
+  {
+   "window_start": "2024-02-01",
+   "window_end": "2024-07-31",
+   "return": -0.04723548572377112,
+   "trades": 12,
+   "win_rate": 0.16666666666666666,
+   "expectancy_R": -0.8098454619287146,
+   "max_dd": -0.04729474780641507
+  },
+  {
+   "window_start": "2024-08-01",
+   "window_end": "2024-08-23",
+   "return": 0.02628009116220742,
+   "trades": 3,
+   "win_rate": 1.0,
+   "expectancy_R": 1.9824712861930236,
+   "max_dd": -0.008742628167915267
+  }
+ ],
+ "cost_stress": [
+  {
+   "scenario": "base (data spread, $3.5/lot/side, 0.1 pip slip, $6 swap)",
+   "return": -0.056842163378906685,
+   "sharpe": -0.5995746241281915,
+   "profit_factor": 0.9923894889693289,
+   "expectancy_R": -0.004630495687684916,
+   "max_dd": -0.14933234683613583
+  },
+  {
+   "scenario": "zero costs (gross edge)",
+   "return": 0.05390945467721431,
+   "sharpe": -0.2617415457575981,
+   "profit_factor": 1.069163966845712,
+   "expectancy_R": 0.04980942827827071,
+   "max_dd": -0.11439149773773849
+  },
+  {
+   "scenario": "spread x2",
+   "return": -0.05857007459026353,
+   "sharpe": -0.6083908670452458,
+   "profit_factor": 0.9894501067807536,
+   "expectancy_R": -0.0075717705678179596,
+   "max_dd": -0.15088119192503124
+  },
+  {
+   "scenario": "spread x2 + slippage 0.5 pip",
+   "return": -0.08768208916652498,
+   "sharpe": -0.7084553828365528,
+   "profit_factor": 0.9501078786289965,
+   "expectancy_R": -0.02968853841958,
+   "max_dd": -0.16415676799151213
+  },
+  {
+   "scenario": "spread x3 + slip 1 pip + $5 comm",
+   "return": -0.11904143529645739,
+   "sharpe": -0.8217588134676324,
+   "profit_factor": 0.9074182954340436,
+   "expectancy_R": -0.05487056996022835,
+   "max_dd": -0.17601095772922137
+  },
+  {
+   "scenario": "retail spread: +0.8 pip extra, no commission",
+   "return": -0.07285736614913507,
+   "sharpe": -0.6616881712543744,
+   "profit_factor": 0.9693746737943606,
+   "expectancy_R": -0.014977957186355634,
+   "max_dd": -0.15190451565038743
+  }
+ ],
+ "monte_carlo": {
+  "n_sims": 5000,
+  "n_trades": 268,
+  "risk_pct": 0.005,
+  "final_return_p5": -0.19075360042808537,
+  "final_return_p50": -0.019268555009113564,
+  "final_return_p95": 0.1986614448976265,
+  "prob_loss": 0.5616,
+  "max_dd_p50": -0.12741156770397016,
+  "max_dd_p95_worst": -0.234504856715509,
+  "mean_R_ci95": [
+   -0.17944002643619433,
+   0.17716295511933142
+  ]
+ },
+ "acceptance_validation": {
+  "Sharpe > 1.0": false,
+  "Profit factor > 1.2": false,
+  "Max DD < 20%": true,
+  "Net return > 0": false,
+  "Trades >= 50": true,
+  "Expectancy (R) > 0": false,
+  "Positive WF windows >= 60%": false
+ },
+ "dev_gate_passed": false,
+ "final_decision": "REJECTED",
+ "data_quality": {
+  "source": "FXCM public archive (candledata.fxcorporate.com)",
+  "asset": "EURUSD",
+  "timeframe": "1H",
+  "raw_rows": 67955,
+  "warnings": [
+   "source has no volume data",
+   "more than 2% of session hours missing"
+  ],
+  "sorted_chronologically": true,
+  "duplicate_timestamps": 0,
+  "timezone": "UTC",
+  "missing_values": 0,
+  "flat_zero_volume_rows_removed": 0,
+  "flat_rows_inside_session": 0,
+  "out_of_session_rows_removed": 74,
+  "invalid_ohlc_rows": 0,
+  "negative_spread_rows": 1013,
+  "spread_pips_median": 0.20000000000131024,
+  "spread_pips_p95": 1.40000000000029,
+  "spread_pips_p99": 5.199999999998539,
+  "wide_spread_rows(>5pip)": 721,
+  "abnormal_moves": 17,
+  "abnormal_move_times": [
+   "2015-10-28 18:00:00+00:00",
+   "2015-12-03 13:00:00+00:00",
+   "2016-03-10 12:00:00+00:00",
+   "2016-06-03 12:00:00+00:00",
+   "2016-06-24 02:00:00+00:00",
+   "2017-04-23 21:00:00+00:00",
+   "2019-03-20 18:00:00+00:00",
+   "2019-09-12 13:00:00+00:00",
+   "2021-06-16 18:00:00+00:00",
+   "2021-11-30 15:00:00+00:00",
+   "2022-11-10 13:00:00+00:00",
+   "2023-12-13 19:00:00+00:00",
+   "2024-09-01 21:00:00+00:00",
+   "2024-11-06 00:00:00+00:00",
+   "2025-08-01 12:00:00+00:00",
+   "2026-08-09 21:00:00+00:00",
+   "2026-09-16 18:00:00+00:00"
+  ],
+  "weekend_gaps": 554,
+  "unexpected_gaps(>1h)": 24,
+  "largest_unexpected_gaps": [
+   "2026-08-09 21:00:00+00:00 (100 days 01:00:00)",
+   "2025-07-27 21:00:00+00:00 (16 days 01:00:00)",
+   "2024-12-29 22:00:00+00:00 (16 days 01:00:00)",
+   "2025-01-12 22:00:00+00:00 (9 days 01:00:00)",
+   "2024-09-01 21:00:00+00:00 (9 days 01:00:00)",
+   "2023-07-09 21:00:00+00:00 (9 days 01:00:00)",
+   "2020-01-02 06:00:00+00:00 (5 days 09:00:00)",
+   "2019-01-02 05:00:00+00:00 (4 days 08:00:00)",
+   "2017-12-26 04:00:00+00:00 (3 days 07:00:00)",
+   "2016-01-03 22:00:00+00:00 (3 days 04:00:00)"
+  ],
+  "start": "2015-07-01 00:00:00+00:00",
+  "end": "2026-10-30 20:00:00+00:00",
+  "clean_rows": 67881,
+  "expected_session_hours": 71580,
+  "missing_session_hours": 3699,
+  "missing_session_pct": 5.168,
+  "cross_check_vs_dukascopy": {
+   "common_hours": 42900,
+   "period": [
+    "2015-07-01 00:00:00+00:00",
+    "2022-05-31 23:00:00+00:00"
+   ],
+   "hourly_return_corr_by_lag": {
+    "-2h": -0.0003685963337021035,
+    "-1h": -0.004620918805017491,
+    "+0h": 0.9984831535869334,
+    "+1h": -0.005155303248541104,
+    "+2h": -0.0005336412071209986
+   },
+   "mid_close_abs_diff_pips": {
+    "median": 0.05000000000032756,
+    "p99": 1.3999999999980695
+   },
+   "median_spread_pips": {
+    "primary": 0.1999999999990898,
+    "secondary": 0.2999999999997449
+   }
+  },
+  "cross_check_vs_yahoo_daily": {
+   "overlap_days": 2830,
+   "daily_return_corr_by_lag": {
+    "-1d": 0.9593037447242874,
+    "+0d": 0.03496781071127206,
+    "+1d": -0.010966307752285619
+   },
+   "daily_return_corr_aligned": 0.9593037447242874,
+   "weekly_return_corr": 0.7896474294643322,
+   "median_abs_level_diff_pct": 0.010109385943712912,
+   "p99_abs_level_diff_pct": 0.4221095191578843
+  }
+ }
+}

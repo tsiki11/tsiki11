@@ -48,10 +48,16 @@ def mid_ohlc(df: pd.DataFrame) -> pd.DataFrame:
                         index=df.index)
 
 
-def resample_ohlc(ohlc: pd.DataFrame, rule: str = "4h") -> pd.DataFrame:
-    """Bars labelled by OPEN time (UTC, anchored at 00:00), e.g. 00-04, 04-08..."""
-    agg = ohlc.resample(rule, label="left", closed="left").agg(
-        {"open": "first", "high": "max", "low": "min", "close": "last"})
+def resample_ohlc(ohlc: pd.DataFrame, rule: str = "4h", offset: str | None = None,
+                  min_bars: int = 0) -> pd.DataFrame:
+    """Bars labelled by OPEN time (UTC, anchored at 00:00 + offset), e.g. 00-04, 04-08...
+    Daily FX bars: rule="24h", offset="21h" -> days roll at 21:00 UTC (New York close)."""
+    # origin="epoch": bins never depend on where the sample starts (look-ahead-test safe).
+    # Use "24h" (not "1D") for daily bars: pandas ignores offset for calendar frequencies.
+    r = ohlc.resample(rule, label="left", closed="left", origin="epoch", offset=offset)
+    agg = r.agg({"open": "first", "high": "max", "low": "min", "close": "last"})
+    if min_bars:   # drop stub bars (e.g. the 1-hour Friday/Sunday slivers around the weekend)
+        agg = agg[r["close"].count() >= min_bars]
     return agg.dropna()
 
 
@@ -69,3 +75,13 @@ def align_htf(htf: pd.DataFrame, htf_period: str, ltf_index: pd.DatetimeIndex,
     out = pd.merge_asof(left, avail, left_index=True, right_index=True, direction="backward")
     out.index = ltf_index
     return out
+
+
+def htf_on_ltf(htf_values: pd.DataFrame, htf_period: str, ltf_index: pd.DatetimeIndex) -> pd.DataFrame:
+    """align_htf + a `fresh` flag that is True only on the LTF bar at whose close a NEW
+    HTF bar has just completed -> HTF events (crosses, breakouts) fire exactly once."""
+    v = htf_values.copy()
+    v["_bar"] = np.arange(len(v), dtype=float)
+    out = align_htf(v, htf_period, ltf_index)
+    out["fresh"] = out["_bar"].notna() & (out["_bar"] != out["_bar"].shift(1))
+    return out.drop(columns="_bar")
